@@ -1,98 +1,280 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import ConfirmModal from "../components/ConfirmModal";
+import { LinearGradient } from "expo-linear-gradient";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const { width } = Dimensions.get("window");
 
-export default function HomeScreen() {
+export default function SevaScreen() {
+  const [visible, setVisible] = useState(false);
+
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString();
+  const dayName = today.toLocaleDateString("hi-IN", { weekday: "long" });
+
+  const categories: Record<string, string[]> = {
+    "मंदिर सफाई": [
+      "गर्भगृह सफाई",
+      "हाल सफाई",
+      "फर्श पोछा",
+      "वेदी सफाई",
+      "दीप सफाई",
+    ],
+    "रसोई सेवा": [
+      "सब्जी काटना",
+      "भोजन बनाना",
+      "प्रसाद वितरण",
+      "बर्तन धोना",
+      "सामग्री व्यवस्था",
+    ],
+    "कार्यक्रम सेवा": [
+      "सजावट",
+      "साउंड व्यवस्था",
+      "स्टेज व्यवस्था",
+      "लाइट व्यवस्था",
+      "फूल सजावट",
+    ],
+    "बुक स्टॉल": [
+      "पुस्तक व्यवस्था",
+      "काउंटर सेवा",
+      "स्टॉक जांच",
+      "ग्राहक सहायता",
+      "रजिस्टर एंट्री",
+    ],
+    "सुरक्षा सेवा": [
+      "गेट ड्यूटी",
+      "भीड़ नियंत्रण",
+      "पार्किंग सहायता",
+      "रात्रि ड्यूटी",
+      "कार्यक्रम सुरक्षा",
+    ],
+    "भजन सेवा": [
+      "कीर्तन गायन",
+      "मृदंग बजाना",
+      "हारमोनियम",
+      "कीर्तन लीड",
+      "भजन सहयोग",
+    ],
+    "मेंटेनेंस": [
+      "इलेक्ट्रिकल जांच",
+      "पानी व्यवस्था",
+      "मरम्मत कार्य",
+      "पेंटिंग",
+      "कारपेंट्री",
+    ],
+    "गार्डन सेवा": [
+      "पौधों को पानी",
+      "घास सफाई",
+      "कटिंग",
+      "गार्डन सफाई",
+      "खाद डालना",
+    ],
+    "बाहरी सफाई": [
+      "सड़क सफाई",
+      "प्रवेश द्वार सफाई",
+      "डस्टबिन जांच",
+      "खिड़की सफाई",
+      "जूता स्थान सफाई",
+    ],
+    "दान काउंटर": [
+      "रसीद बनाना",
+      "दान एंट्री",
+      "आगंतुक सहायता",
+      "अकाउंट सहायता",
+      "रिकॉर्ड मेंटेन",
+    ],
+  };
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+
+  const handleSubmit = () => {
+    if (!selectedCategory || !selectedSubCategory) {
+      Alert.alert("कृपया सेवा चुनें");
+      return;
+    }
+    setVisible(true);
+  };
+
+  const handleConfirm = () => {
+    setVisible(false);
+    Alert.alert("सफलता 🙏", `${selectedSubCategory} सेवा दर्ज हो गई`);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        
+        {/* Date */}
+        <View style={styles.dateContainer}>
+          <Text style={styles.dayText}>{dayName}</Text>
+          <Text style={styles.dateText}>{formattedDate}</Text>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.card}>
+          <Text style={styles.title}>🌸 सेवा दर्ज करें</Text>
+
+          {/* CATEGORY */}
+          <Text style={styles.label}>सेवा श्रेणी चुनें</Text>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {Object.keys(categories).map((cat, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === cat && styles.selectedChip,
+                ]}
+                onPress={() => {
+                  setSelectedCategory(cat);
+                  setSelectedSubCategory(null);
+                }}
+              >
+                <Text style={styles.chipText}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* SUB CATEGORY */}
+          {selectedCategory && (
+            <>
+              <Text style={styles.label}>सेवा चुनें</Text>
+
+              {categories[selectedCategory].map((sub, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.option,
+                    selectedSubCategory === sub && styles.selectedOption,
+                  ]}
+                  onPress={() => setSelectedSubCategory(sub)}
+                >
+                  <Text style={styles.optionText}>{sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {/* SUBMIT */}
+          <TouchableOpacity onPress={handleSubmit}>
+            <LinearGradient
+              colors={["#1f1f1f", "#333"]}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>सेवा सबमिट करें</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+
+      <ConfirmModal
+        visible={visible}
+        onConfirm={handleConfirm}
+        onCancel={() => setVisible(false)}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+
+  dateContainer: {
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  dayText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
   },
+
+  dateText: {
+    color: "#aaa",
+    fontSize: 14,
+  },
+
+  card: {
+    backgroundColor: "#111",
+    padding: 20,
+    borderRadius: 20,
+    marginHorizontal: 15,
+  },
+
+  title: {
+    fontSize: width * 0.06,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 20,
+  },
+
+  label: {
+    color: "#ccc",
+    marginBottom: 10,
+    marginTop: 10,
+  },
+
+  categoryChip: {
+    backgroundColor: "#1c1c1c",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+
+  selectedChip: {
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
+
+  chipText: {
+    color: "#fff",
+    fontSize: 13,
+  },
+
+  option: {
+    backgroundColor: "#1c1c1c",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+
+  selectedOption: {
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
+
+  optionText: {
+    color: "#fff",
+  },
+
+  button: {
+    marginTop: 25,
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
 });

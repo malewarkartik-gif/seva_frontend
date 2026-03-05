@@ -1,33 +1,62 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+
+        tabBarStyle: {
+          backgroundColor: "#000",
+          borderTopWidth: 0,
+          paddingBottom: insets.bottom,   // only safe padding
+          paddingTop: 6,
+          height: 60 + insets.bottom,     // controlled height
+        },
+
+        tabBarActiveTintColor: "#fff",
+        tabBarInactiveTintColor: "#666",
+
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          marginBottom: 4,
+        },
+
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Seva",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name="flower"
+              size={focused ? 24 : 22}
+              color={color}
+            />
+          ),
         }}
       />
+
       <Tabs.Screen
-        name="explore"
+        name="admin-login"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Admin",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name="lock-closed"
+              size={focused ? 24 : 22}
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>
