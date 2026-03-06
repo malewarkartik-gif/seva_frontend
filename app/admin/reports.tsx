@@ -1,48 +1,74 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useState } from "react";
 import {
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import API from "../services/api";
 
 export default function Reports() {
-  const [date, setDate] = useState<Date | null>(null);
+  const [date, setDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
 
-  const handleDownload = () => {
+  // -------- DOWNLOAD REPORT --------
+  const handleDownload = async () => {
     if (!date) {
       Alert.alert("Please select a date first");
       return;
     }
 
-    const today = new Date();
-    if (date > today) {
-      Alert.alert("Future schedule not allowed");
-      return;
-    }
+    try {
+      const formattedDate = date.toISOString().split("T")[0];
 
-    Alert.alert("Success", `Report for ${date.toDateString()} downloaded`);
+      const res = await API.get(`/reports/${formattedDate}`);
+
+      const reportData = res.data;
+
+      if (!reportData.length) {
+        Alert.alert("No report found for this date");
+        return;
+      }
+
+      // -------- CREATE CSV --------
+      let csv = "Person Name,Category,Subcategory\n";
+
+      reportData.forEach((item) => {
+        csv += `${item.person_name},${item.category},${item.subcategory}\n`;
+      });
+
+      const fileUri = FileSystem.documentDirectory + `seva_report_${formattedDate}.csv`;
+
+      await FileSystem.writeAsStringAsync(fileUri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      await Sharing.shareAsync(fileUri);
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "Failed to download report");
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>📄 Reports</Text>
         <Text style={styles.subtitle}>
           Select a date to download seva report
         </Text>
 
-        {/* Date Selector */}
+        {/* DATE PICKER */}
         <TouchableOpacity
           style={styles.dateBox}
           onPress={() => setShowPicker(true)}
@@ -67,7 +93,7 @@ export default function Reports() {
           />
         )}
 
-        {/* Download Button */}
+        {/* DOWNLOAD BUTTON */}
         <TouchableOpacity onPress={handleDownload}>
           <LinearGradient colors={["#1a1a1a", "#333"]} style={styles.button}>
             <Ionicons
@@ -92,7 +118,6 @@ const styles = StyleSheet.create({
 
   scroll: {
     padding: 20,
-    paddingBottom: 120,
   },
 
   title: {
