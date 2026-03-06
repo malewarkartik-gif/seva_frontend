@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,53 +10,75 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import API from "../services/api";
 
 export default function SeeUsers() {
-  const [users, setUsers] = useState([
-    { id: 1, name: "Rohan", mobile: "9876543210" },
-    { id: 2, name: "Amit", mobile: "9876500000" },
-    { id: 3, name: "Suresh", mobile: "9123456789" },
-  ]);
-
+  const [users, setUsers] = useState([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [newName, setNewName] = useState("");
   const [newMobile, setNewMobile] = useState("");
 
-  const handleDelete = (id: number, name: string) => {
+  // Fetch Users
+  const fetchUsers = async () => {
+    try {
+      const res = await API.get("/users/");
+      setUsers(res.data);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "Failed to load users");
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Delete User
+  const handleDelete = (id, name) => {
     Alert.alert("Confirm Delete", `Delete ${name}?`, [
       { text: "Cancel" },
       {
         text: "Delete",
-        onPress: () => {
-          setUsers(users.filter((user) => user.id !== id));
+        onPress: async () => {
+          try {
+            await API.delete(`/users/${id}`);
+            fetchUsers();
+          } catch (error) {
+            Alert.alert("Error", "Delete failed");
+          }
         },
       },
     ]);
   };
 
-  const openEditModal = (user: any) => {
+  // Open Edit Modal
+  const openEditModal = (user) => {
     setSelectedUser(user);
-    setNewName(user.name);
+    setNewName(user.username);
     setNewMobile(user.mobile);
     setEditModalVisible(true);
   };
 
-  const handleUpdate = () => {
+  // Update User
+  const handleUpdate = async () => {
     if (!newName || newMobile.length !== 10) {
       Alert.alert("Invalid input");
       return;
     }
 
-    setUsers(
-      users.map((user) =>
-        user.id === selectedUser.id
-          ? { ...user, name: newName, mobile: newMobile }
-          : user,
-      ),
-    );
+    try {
+      await API.put(`/users/${selectedUser.id}`, {
+        username: newName.trim(),
+        mobile: newMobile.trim(),
+      });
 
-    setEditModalVisible(false);
+      setEditModalVisible(false);
+      fetchUsers();
+    } catch (error) {
+      Alert.alert("Error", "Update failed");
+    }
   };
 
   return (
@@ -68,7 +89,7 @@ export default function SeeUsers() {
         {users.map((user) => (
           <View key={user.id} style={styles.card}>
             <View>
-              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userName}>{user.username}</Text>
               <Text style={styles.mobile}>{user.mobile}</Text>
             </View>
 
@@ -78,7 +99,7 @@ export default function SeeUsers() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => handleDelete(user.id, user.name)}
+                onPress={() => handleDelete(user.id, user.username)}
               >
                 <Ionicons name="trash-outline" size={22} color="#ff4d4d" />
               </TouchableOpacity>
@@ -108,6 +129,7 @@ export default function SeeUsers() {
               keyboardType="numeric"
               value={newMobile}
               onChangeText={setNewMobile}
+              maxLength={10}
             />
 
             <View style={styles.modalButtons}>
@@ -122,12 +144,14 @@ export default function SeeUsers() {
                 <Text style={{ color: "#fff" }}>Update</Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </View>
       </Modal>
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
