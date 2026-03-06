@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,72 +10,81 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import API from "../services/api";
 
 export default function ManageSevas() {
-  const [sevas, setSevas] = useState({
-    "Temple Cleaning": [
-      "Garbhagriha Cleaning",
-      "Hall Cleaning",
-      "Floor Mopping",
-    ],
-    "Kitchen Seva": ["Vegetable Cutting", "Cooking", "Serving Prasadam"],
-  });
-
+  const [sevas, setSevas] = useState([]);
   const [editVisible, setEditVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSeva, setSelectedSeva] = useState("");
+  const [selectedSeva, setSelectedSeva] = useState(null);
   const [updatedSeva, setUpdatedSeva] = useState("");
 
-  // ------------------ UPDATE ------------------
-  const openEdit = (category: string, seva: string) => {
-    setSelectedCategory(category);
+  // -------- FETCH SEVAS --------
+  const fetchSevas = async () => {
+    try {
+      const res = await API.get("/sevas/");
+      setSevas(res.data);
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Failed to load sevas");
+    }
+  };
+
+  useEffect(() => {
+    fetchSevas();
+  }, []);
+
+  // -------- GROUP BY CATEGORY --------
+  const groupedSevas = sevas.reduce((acc, seva) => {
+    if (!acc[seva.category]) {
+      acc[seva.category] = [];
+    }
+    acc[seva.category].push(seva);
+    return acc;
+  }, {});
+
+  // -------- OPEN EDIT --------
+  const openEdit = (seva) => {
     setSelectedSeva(seva);
-    setUpdatedSeva(seva);
+    setUpdatedSeva(seva.subcategory);
     setEditVisible(true);
   };
 
-  const handleUpdate = () => {
+  // -------- UPDATE --------
+  const handleUpdate = async () => {
     if (!updatedSeva.trim()) {
       Alert.alert("Seva name required");
       return;
     }
 
-    setSevas((prev) => ({
-      ...prev,
-      [selectedCategory]: prev[selectedCategory].map((s) =>
-        s === selectedSeva ? updatedSeva : s,
-      ),
-    }));
+    try {
+      await API.put(`/sevas/${selectedSeva.id}`, {
+        category: selectedSeva.category,
+        subcategory: updatedSeva,
+      });
 
-    setEditVisible(false);
+      setEditVisible(false);
+      fetchSevas();
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Update failed");
+    }
   };
 
-  // ------------------ DELETE SEVA ------------------
-  const handleDeleteSeva = (category: string, seva: string) => {
-    Alert.alert("Confirm", `Delete ${seva}?`, [
+  // -------- DELETE --------
+  const handleDeleteSeva = (seva) => {
+    Alert.alert("Confirm", `Delete ${seva.subcategory}?`, [
       { text: "Cancel" },
       {
         text: "Delete",
-        onPress: () => {
-          setSevas((prev) => ({
-            ...prev,
-            [category]: prev[category].filter((s) => s !== seva),
-          }));
-        },
-      },
-    ]);
-  };
-
-  // ------------------ DELETE CATEGORY ------------------
-  const handleDeleteCategory = (category: string) => {
-    Alert.alert("Confirm", `Delete entire ${category}?`, [
-      { text: "Cancel" },
-      {
-        text: "Delete",
-        onPress: () => {
-          const updated = { ...sevas };
-          delete updated[category];
-          setSevas(updated);
+        onPress: async () => {
+          try {
+            await API.delete(`/sevas/${seva.id}`);
+            fetchSevas();
+          } catch (err) {
+            console.log(err);
+            Alert.alert("Error", "Delete failed");
+          }
         },
       },
     ]);
@@ -87,29 +95,21 @@ export default function ManageSevas() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>⚙ Manage Sevas</Text>
 
-        {Object.keys(sevas).map((category, index) => (
-          <View key={index} style={styles.categoryCard}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryTitle}>{category}</Text>
+        {Object.keys(groupedSevas).map((category) => (
+          <View key={category} style={styles.categoryCard}>
+            <Text style={styles.categoryTitle}>{category}</Text>
 
-              <TouchableOpacity onPress={() => handleDeleteCategory(category)}>
-                <Ionicons name="trash-outline" size={20} color="#ff4d4d" />
-              </TouchableOpacity>
-            </View>
-
-            {sevas[category].map((seva, idx) => (
-              <View key={idx} style={styles.sevaRow}>
-                <Text style={styles.sevaText}>{seva}</Text>
+            {groupedSevas[category].map((seva) => (
+              <View key={seva.id} style={styles.sevaRow}>
+                <Text style={styles.sevaText}>{seva.subcategory}</Text>
 
                 <View style={styles.iconRow}>
-                  <TouchableOpacity onPress={() => openEdit(category, seva)}>
-                    <Ionicons name="create-outline" size={20} color="#4da6ff" />
+                  <TouchableOpacity onPress={() => openEdit(seva)}>
+                    <Ionicons name="create-outline" size={22} color="#4da6ff" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => handleDeleteSeva(category, seva)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#ff4d4d" />
+                  <TouchableOpacity onPress={() => handleDeleteSeva(seva)}>
+                    <Ionicons name="trash-outline" size={22} color="#ff4d4d" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -118,7 +118,7 @@ export default function ManageSevas() {
         ))}
       </ScrollView>
 
-      {/* UPDATE MODAL */}
+      {/* EDIT MODAL */}
       <Modal visible={editVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -147,6 +147,7 @@ export default function ManageSevas() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -173,17 +174,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  categoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
   categoryTitle: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 10,
   },
 
   sevaRow: {
@@ -197,11 +192,12 @@ const styles = StyleSheet.create({
 
   sevaText: {
     color: "#ccc",
+    fontSize: 15,
   },
 
   iconRow: {
     flexDirection: "row",
-    gap: 15,
+    gap: 18,
   },
 
   modalOverlay: {
