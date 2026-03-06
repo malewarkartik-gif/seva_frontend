@@ -25,8 +25,8 @@ export default function AddSeva() {
       setLoading(true);
 
       const response = await API.post("/sevas", {
-        category: category,
-        subcategory: sub,
+        category: category.trim(),
+        subcategory: sub.trim(),
       });
 
       Alert.alert("Success", "Seva Added Successfully");
@@ -34,7 +34,7 @@ export default function AddSeva() {
       setCategory("");
       setSub("");
 
-    } catch (error: any) {
+    } catch (error) {
       console.log(error?.response?.data);
 
       Alert.alert(
@@ -76,12 +76,13 @@ export default function AddSeva() {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const sharedStyles = {
+const styles = {
   container: {
     flex: 1,
     backgroundColor: "#000",
@@ -120,4 +121,3 @@ const sharedStyles = {
     fontSize: 16,
   },
 };
-const styles = sharedStyles;
